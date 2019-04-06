@@ -113,11 +113,20 @@ body {
   }
 
   .p-color-row {
-    background-color: #c00;
-    width: 0.8em; height: 0.8em;
+    // background-color: #c00;
+    width: 0.4em; height: 0.8em;
     border-top-right-radius: 0.05em;
     border-bottom-right-radius: 0.05em;
     margin: 2px 100%;
+    transition: width 0.2s;
+  }
+
+  .p-color-row--selected {
+    width: 0.4em * 2;
+  }
+
+  .p-color-row--hidden {
+    width: 0;
   }
 
   .p-color-input {
@@ -130,6 +139,7 @@ body {
     width: 10em;
     font-size: 0.6em;
     font-weight: 600;
+    line-height: 1em;
     z-index: 1;
   }
 }
