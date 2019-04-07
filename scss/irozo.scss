@@ -7,7 +7,7 @@ $color-input-fill: rgb(240,240,240);
 $color-input-line: rgb(92,92,92);
 $color-text: rgb(219,219,219);
 $color-text-off: rgb(64,64,64);
-$color-text-selection: rgb(192,192,192);
+$color-text-selection: rgb(170,170,170);
 
 .c-input {
   border: none;
@@ -56,6 +56,29 @@ body {
   transition: font-size 0.2s;
 }
 
+.p-bg-icon-box {
+  position: absolute;
+  opacity: 0.03;
+  width: 120vh; height: 90vh;
+  right: 0; bottom: 0;
+  transform: translate(10%, 10%) rotate(10deg);
+}
+
+.p-icon-hair {
+  position: absolute;
+  background-color: $color-text-selection;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  border-radius: 0.02em;
+}
+.p-icon-face {
+  position: absolute;
+  left: 0; top: 33%;
+  right: 25%; bottom: 0;
+  background-color: $color-input-fill;
+  border-bottom-left-radius: 0.02em;
+}
+
 .p-main-box {
   display: flex;
   flex-flow: column nowrap;
@@ -73,7 +96,6 @@ body {
     .p-title-text {
       color: $color-text;
       letter-spacing: 0.1em;
-      // margin-left: 0.18em;
       padding-left: 0.18em;
       padding-right: 0.06em;
     }
@@ -83,21 +105,6 @@ body {
       width: 0.64em * 4 / 3;
       height: 0.64em;
       margin-top: 0.06em;
-
-      .p-title-icon-hair {
-        position: absolute;
-        background-color: #ccc;
-        left: 0; top: 0;
-        width: 100%; height: 100%;
-        border-radius: 0.02em;
-      }
-      .p-title-icon-face {
-        position: absolute;
-        left: 0; top: 33%;
-        right: 25%; bottom: 0;
-        background-color: #eee;
-        border-bottom-left-radius: 0.02em;
-      }
     }
   }
 
@@ -150,6 +157,7 @@ body {
 }
 
 .p-desc-box {
+  z-index: 1;
   .p-desc-text {
     color: $color-text-off;
     font-size: 5vmin;
