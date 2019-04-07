@@ -13,21 +13,29 @@ class Irozo {
   
     this.parseColor = (text) => {
       let color = tinycolor(text);
-      if (!color.isValid()) {
-        const m = text.match(/(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*(?:,\s*(\w+))?/);
-        if (m) {
-          const [r, g, b, a] = m.slice(1).map(t => Number(t));
-          color = isNaN(a) ?
-            tinycolor(`rgb ${r} ${g} ${b}`) :
-            tinycolor(`rgba ${r} ${g} ${b} ${a / 255.0}`);
-        }
+      if (color.isValid()) return color;
+
+      const name = text.match(/\w+/);
+      if (name) {
+        color = tinycolor(name[0]);
+        if (color.isValid()) return color;
       }
-      return color.isValid() ? color : null;
+
+      const rgba = text.match(/(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*(?:,\s*(\w+))?/);
+      if (rgba) {
+        const [r, g, b, a] = rgba.slice(1).map(t => Number(t));
+        color = isNaN(a) ?
+          tinycolor(`rgb ${r} ${g} ${b}`) :
+          tinycolor(`rgba ${r} ${g} ${b} ${a / 255.0}`);
+        if (color.isValid()) return color;
+      }
+
+      return null;
     };
 
     this.adjustSize = () => {
       if (
-        (this.mainBox.clientHeight >= this.base.clientHeight ||
+        (this.mainBox.clientHeight >= (this.base.clientHeight * 0.9) ||
          this.mainBox.clientWidth >= (this.base.clientWidth / 2)) &&
         this.baseFontSize > (this.initialBaseFontSize * 0.2)) {
         this.baseFontSize *= 0.8;
@@ -148,11 +156,6 @@ class Irozo {
     colorInput.onkeydown = (event) => this.colorInputCaretMove(event.target);
     colorInput.onclick = (event) => this.colorInputCaretMove(event.target);
     window.onresize = () => this.adjustSize();
-
-    //debug{
-    colorInput.value = "ff0\ndfdd00\nbb0\n990\n770";
-    this.colorInputTextChanged(colorInput);
-    //}
   }
 }
 const irozo = new Irozo;

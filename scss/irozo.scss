@@ -57,7 +57,6 @@ body {
 }
 
 .p-main-box {
-  // position: absolute;
   display: flex;
   flex-flow: column nowrap;
   justify-content: center;
@@ -151,10 +150,9 @@ body {
 }
 
 .p-desc-box {
-  color: $color-text-off;
-  font-size: 5vmin;
-}
-
-.p-desc-text {
-  text-align: right;
+  .p-desc-text {
+    color: $color-text-off;
+    font-size: 5vmin;
+    text-align: right;
+  }
 }
