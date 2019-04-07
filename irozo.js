@@ -130,15 +130,37 @@ class Irozo {
       this.descText.innerHTML = t;
     };
 
-    this.colorInputTextChanged = (element) => {
-      const lines = element.value.split("\n");
-      this.colors = lines.map(t => this.parseColor(t));
-      element.rows = this.colors.length;
-      this.updateColorRows(this.colors);
-      this.selectedRowChanged(this.selectedRowIndex, false);
-    };
+    this.colorInputKeyDown = (event) => {
+      const element = event.target;
+      if (event.key == "Enter") {
+        const text = element.value;
+        let m = text.match(/^random(\d+)?$/);
+        if (!m) {
+          m = text.match(/^\?(\d+)?$/)
+        }
+        if (m) {
+          const count = Math.min(m[1], 100) || 1;
+          let randomText = "";
+          for (let i = 0; i < count; ++i) {
+            const names = Object.keys(tinycolor.names);
+            const index = Math.floor(names.length * Math.random());
+            const color = tinycolor(tinycolor.names[names[index]]);
+            randomText += color.toString() + "\n";
+          }
+          element.value = randomText.slice(0, -1);
+          this.colorInputTextChanged(event)
+          event.preventDefault();
+        }
+      }
+      this.colorInputCaretMove(event);
+    }
 
-    this.colorInputCaretMove = (element) => {
+    this.colorInputClick = (event) => {
+      this.colorInputCaretMove(event);
+    }
+
+    this.colorInputCaretMove = (event) => {
+      const element = event.target;
       setTimeout(() => {
         const start = element.selectionEnd;
         const text = element.value;
@@ -147,15 +169,24 @@ class Irozo {
       }, 10);
     };
 
+    this.colorInputTextChanged = (event) => {
+      const element = event.target;
+      const lines = element.value.split("\n");
+      this.colors = lines.map(t => this.parseColor(t));
+      element.rows = this.colors.length;
+      this.updateColorRows(this.colors);
+      this.selectedRowChanged(this.selectedRowIndex, false);
+    };
+
     this.colorRowClick = (element, index) => {
       this.selectedRowChanged(index, true);
     };
 
     const colorInput = document.querySelector("#colorInput");
-    colorInput.oninput = (event) => this.colorInputTextChanged(event.target);
-    colorInput.onkeydown = (event) => this.colorInputCaretMove(event.target);
-    colorInput.onclick = (event) => this.colorInputCaretMove(event.target);
-    window.onresize = () => this.adjustSize();
+    colorInput.oninput = this.colorInputTextChanged;
+    colorInput.onkeydown = this.colorInputKeyDown;
+    colorInput.onclick = this.colorInputCaretMove;
+    window.onresize = this.adjustSize;
   }
 }
 const irozo = new Irozo;
