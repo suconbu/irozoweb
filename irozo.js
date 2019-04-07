@@ -4,7 +4,7 @@ class Irozo {
   constructor() {
     this.colors = [];
     this.colorRows = [];
-    this.selectedRowIndex = -1;
+    this.selectedRowIndex = 0;
     this.base = document.querySelector("#base");
     this.mainBox = document.querySelector("#mainBox");
     this.initialBaseFontSize = Number(getComputedStyleValue(this.base, "font-size").slice(0, -2));
@@ -81,26 +81,11 @@ class Irozo {
       }
       this.selectedRowIndex = index;
       selectedRow = this.colorRows[index];
-      selectedRow.classList.add("p-color-row--selected");
-
-      const selectedColor = this.colors[index];
-      let t = "";
-      if (selectedColor) {
-        const rgb = selectedColor.toRgb();
-        t += selectedColor.toString("rgb") + "<br>";
-        t += selectedColor.toString("prgb") + "<br>";
-        const hex3 = tinycolor({
-          r: (rgb.r & 0xF0) | ((rgb.r & 0xF0) >> 4),
-          g: (rgb.g & 0xF0) | ((rgb.g & 0xF0) >> 4),
-          b: (rgb.b & 0xF0) | ((rgb.b & 0xF0) >> 4)
-        });
-        t += hex3.toString("hex3") + "<br>";
-        t += selectedColor.toString((rgb.a < 1.0) ? "hex8" : "hex6") + "<br>";
-        t += selectedColor.toString("hsl") + "<br>";
-        const name = tinycolor({ r: rgb.r, g: rgb.g, b: rgb.b }).toString("name");
-        t += (/^#/.test(name) ? "-" : name) + "<br>";
+      if (selectedRow) {
+        selectedRow.classList.add("p-color-row--selected");
       }
-      this.descText.innerHTML = t;
+
+      this.updateColorDescription(this.colors[index]);
 
       if (updateInputSelection) {
         const colorInput = document.querySelector("#colorInput");
@@ -117,11 +102,32 @@ class Irozo {
       }
     }
 
+    this.updateColorDescription = (color) => {
+      let t = "";
+      if (color) {
+        const rgb = color.toRgb();
+        t += color.toString("rgb") + "<br>";
+        t += color.toString("prgb") + "<br>";
+        const hex3 = tinycolor({
+          r: (rgb.r & 0xF0) | ((rgb.r & 0xF0) >> 4),
+          g: (rgb.g & 0xF0) | ((rgb.g & 0xF0) >> 4),
+          b: (rgb.b & 0xF0) | ((rgb.b & 0xF0) >> 4)
+        });
+        t += hex3.toString("hex3") + "<br>";
+        t += color.toString((rgb.a < 1.0) ? "hex8" : "hex6") + "<br>";
+        t += color.toString("hsl") + "<br>";
+        const name = tinycolor({ r: rgb.r, g: rgb.g, b: rgb.b }).toString("name");
+        t += (/^#/.test(name) ? "-" : name) + "<br>";
+      }
+      this.descText.innerHTML = t;
+    };
+
     this.colorInputTextChanged = (element) => {
       const lines = element.value.split("\n");
       this.colors = lines.map(t => this.parseColor(t));
       element.rows = this.colors.length;
       this.updateColorRows(this.colors);
+      this.selectedRowChanged(this.selectedRowIndex, false);
     };
 
     this.colorInputCaretMove = (element) => {
@@ -140,7 +146,6 @@ class Irozo {
     const colorInput = document.querySelector("#colorInput");
     colorInput.oninput = (event) => this.colorInputTextChanged(event.target);
     colorInput.onkeydown = (event) => this.colorInputCaretMove(event.target);
-    // colorInput.onkeyup = (event) => this.colorInputCaretMove(event.target);
     colorInput.onclick = (event) => this.colorInputCaretMove(event.target);
     window.onresize = () => this.adjustSize();
 
