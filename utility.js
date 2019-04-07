@@ -35,3 +35,15 @@ function request(method, uri, okHandler) {
   request.open(method, uri, true);
   request.send();
 }
+
+/**
+ * CSS適用後のプロパティ値を取得します。
+ * @param {object} element element オブジェクト
+ * @param {string} propertyName プロパティ名
+ * @return {string} プロパティ値
+ */
+function getComputedStyleValue(element, propertyName) {
+  const style = window.getComputedStyle(element);
+  const value = style.getPropertyValue(propertyName);
+  return value;
+}

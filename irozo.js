@@ -2,9 +2,14 @@
 
 class Irozo {
   constructor() {
+    this.colors = [];
     this.colorRows = [];
     this.selectedRowIndex = -1;
     this.base = document.querySelector("#base");
+    this.mainBox = document.querySelector("#mainBox");
+    this.initialBaseFontSize = Number(getComputedStyleValue(this.base, "font-size").slice(0, -2));
+    this.baseFontSize = this.initialBaseFontSize;
+    this.descText = document.querySelector("#descText");
   
     this.parseColor = (text) => {
       let color = tinycolor(text);
@@ -20,13 +25,35 @@ class Irozo {
       return color.isValid() ? color : null;
     };
 
+    this.adjustSize = () => {
+      if (
+        (this.mainBox.clientHeight >= this.base.clientHeight ||
+         this.mainBox.clientWidth >= (this.base.clientWidth / 2)) &&
+        this.baseFontSize > (this.initialBaseFontSize * 0.2)) {
+        this.baseFontSize *= 0.8;
+      }
+      else if (
+        (this.mainBox.clientHeight < (this.base.clientHeight * 0.6) &&
+         this.mainBox.clientWidth < ((this.base.clientWidth / 2) * 0.6)) &&
+        this.baseFontSize < this.initialBaseFontSize) {
+        this.baseFontSize /= 0.8;
+      }
+      else {
+        return;
+      }
+      this.base.style.fontSize = `${this.baseFontSize}px`;
+      // this.base.ontransitionend = (event) => this.adjustSize();
+      setTimeout(this.adjustSize, 100);
+    };
+
     this.updateColorRows = (colors) => {
       const colorRowBox = document.querySelector("#colorRowBox");
       if (colors.length != this.colorRows.length) {
         colorRowBox.textContent = null;
         this.colorRows = [];
-        colors.forEach(() => {
+        colors.forEach((color, index) => {
           const row = document.createElement("div");
+          row.onclick = (evevt) => this.colorRowClick(evevt.target, index);
           colorRowBox.appendChild(row);
           this.colorRows.push(row);
         });
@@ -43,9 +70,11 @@ class Irozo {
           row.classList.add("p-color-row--hidden");
         }
       });
+
+      this.adjustSize();
     };
 
-    this.selectedRowChanged = (index) => {
+    this.selectedRowChanged = (index, updateInputSelection) => {
       let selectedRow = this.colorRows[this.selectedRowIndex];
       if (selectedRow) {
         selectedRow.classList.remove("p-color-row--selected");
@@ -53,29 +82,70 @@ class Irozo {
       this.selectedRowIndex = index;
       selectedRow = this.colorRows[index];
       selectedRow.classList.add("p-color-row--selected");
+
+      const selectedColor = this.colors[index];
+      let t = "";
+      if (selectedColor) {
+        const rgb = selectedColor.toRgb();
+        t += selectedColor.toString("rgb") + "<br>";
+        t += selectedColor.toString("prgb") + "<br>";
+        const hex3 = tinycolor({
+          r: (rgb.r & 0xF0) | ((rgb.r & 0xF0) >> 4),
+          g: (rgb.g & 0xF0) | ((rgb.g & 0xF0) >> 4),
+          b: (rgb.b & 0xF0) | ((rgb.b & 0xF0) >> 4)
+        });
+        t += hex3.toString("hex3") + "<br>";
+        t += selectedColor.toString((rgb.a < 1.0) ? "hex8" : "hex6") + "<br>";
+        t += selectedColor.toString("hsl") + "<br>";
+        const name = tinycolor({ r: rgb.r, g: rgb.g, b: rgb.b }).toString("name");
+        t += (/^#/.test(name) ? "-" : name) + "<br>";
+      }
+      this.descText.innerHTML = t;
+
+      if (updateInputSelection) {
+        const colorInput = document.querySelector("#colorInput");
+        colorInput.focus();
+        const text = colorInput.value;
+        let startIndex = 0;
+        for (let i = 0; i < index; i++) {
+          startIndex = text.indexOf("\n", startIndex) + 1;
+        }
+        let endIndex = text.indexOf("\n", startIndex);
+        endIndex = (endIndex < 0) ? text.length : endIndex;
+        colorInput.selectionStart = startIndex;
+        colorInput.selectionEnd = endIndex;
+      }
     }
 
-    this.colorInputTextChanged = (target) => {
-      const lines = target.value.split("\n");
-      const colors = lines.map(t => this.parseColor(t));
-      target.rows = colors.length;
-      this.updateColorRows(colors);
+    this.colorInputTextChanged = (element) => {
+      const lines = element.value.split("\n");
+      this.colors = lines.map(t => this.parseColor(t));
+      element.rows = this.colors.length;
+      this.updateColorRows(this.colors);
     };
 
-    this.colorInputKeyUp = (target) => {
-      const start = target.selectionStart;
-      const text = target.value;
-      const index = text.slice(0, start).split("\n").length - 1;
-      this.selectedRowChanged(index);
+    this.colorInputCaretMove = (element) => {
+      setTimeout(() => {
+        const start = element.selectionEnd;
+        const text = element.value;
+        const index = text.slice(0, start).split("\n").length - 1;
+        this.selectedRowChanged(index, false);
+      }, 10);
+    };
+
+    this.colorRowClick = (element, index) => {
+      this.selectedRowChanged(index, true);
     };
 
     const colorInput = document.querySelector("#colorInput");
     colorInput.oninput = (event) => this.colorInputTextChanged(event.target);
-    colorInput.onkeyup = (event) => this.colorInputKeyUp(event.target);
-    colorInput.onclick = (event) => this.colorInputKeyUp(event.target);
+    colorInput.onkeydown = (event) => this.colorInputCaretMove(event.target);
+    // colorInput.onkeyup = (event) => this.colorInputCaretMove(event.target);
+    colorInput.onclick = (event) => this.colorInputCaretMove(event.target);
+    window.onresize = () => this.adjustSize();
 
     //debug{
-    colorInput.value = "1,12,123\n1 ,12, 123 , 255\n0x12,0x9a,0xBc\n0x12 ,0x9a, 0xBc , 0xEF\n";
+    colorInput.value = "ff0\ndfdd00\nbb0\n990\n770";
     this.colorInputTextChanged(colorInput);
     //}
   }
