@@ -1,25 +1,60 @@
 "use strict";
 
+class TextareaHelper {
+  // @return String
+  static getSelectedText = (element) => {
+    const start = element.selectionStart;
+    const end = element.selectionEnd;
+    return element.value.slice(start, end);
+  };
+
+  // @return Number 0 based line index.
+  static getLineIndex = (element, position) => {
+    return element.value.slice(0, position).split("\n").length - 1;
+  };
+
+  // @return Object { start, end }
+  static getLineStartEndPosition = (element, index) => {
+    const text = element.value;
+    const position = { start: 0, end: 0 };
+    for (let i = 0; i < index; i++) {
+      position.start = text.indexOf("\n", position.start) + 1;
+    }
+    position.end = text.indexOf("\n", position.start);
+    position.end = (position.end < 0) ? text.length : position.end;
+    return position;
+  };
+
+  // @return Object { start, end }
+  static getSelectedLineIndex = (element) => {
+    return {
+      start: this.getLineIndex(element, element.selectionStart),
+      end: this.getLineIndex(element, element.selectionEnd)
+    };
+  };
+}
+
 class Irozo {
   constructor() {
     this.colors = [];
-    this.colorRows = [];
-    this.selectedRowIndex = 0;
+    this.colorBars = [];
+    this.selectedBarIndex = 0;
     this.base = document.querySelector("#base");
     this.mainBox = document.querySelector("#mainBox");
     this.initialBaseFontSize = Number(getComputedStyleValue(this.base, "font-size").slice(0, -2));
     this.baseFontSize = this.initialBaseFontSize;
+    this.colorInput = document.querySelector("#colorInput");
+    this.descColor = document.querySelector("#descColor");
     this.descText = document.querySelector("#descText");
-  
+    this.colorBarBox = document.querySelector("#colorBarBox");
+    this.pastedImageCanvas = document.querySelector("#pastedImageCanvas");
+    this.pastedImageContext = this.pastedImageCanvas.getContext("2d");
+    this.pastedImage = null;
+    this.hoveredColor = null;
+
     this.parseColor = (text) => {
       let color = tinycolor(text);
       if (color.isValid()) return color;
-
-      const name = text.match(/\w+/);
-      if (name) {
-        color = tinycolor(name[0]);
-        if (color.isValid()) return color;
-      }
 
       const rgba = text.match(/(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*(?:,\s*(\w+))?/);
       if (rgba) {
@@ -30,10 +65,16 @@ class Irozo {
         if (color.isValid()) return color;
       }
 
+      const name = text.match(/\w+/);
+      if (name) {
+        color = tinycolor(name[0]);
+        if (color.isValid()) return color;
+      }
+
       return null;
     };
 
-    this.adjustSize = () => {
+    this.adjustMainBoxSize = () => {
       if (
         (this.mainBox.clientHeight >= (this.base.clientHeight * 0.9) ||
          this.mainBox.clientWidth >= (this.base.clientWidth / 2)) &&
@@ -50,71 +91,65 @@ class Irozo {
         return;
       }
       this.base.style.fontSize = `${this.baseFontSize}px`;
-      // this.base.ontransitionend = (event) => this.adjustSize();
-      setTimeout(this.adjustSize, 100);
+      setTimeout(this.adjustMainBoxSize, 100);
     };
 
-    this.updateColorRows = (colors) => {
-      const colorRowBox = document.querySelector("#colorRowBox");
-      if (colors.length != this.colorRows.length) {
-        colorRowBox.textContent = null;
-        this.colorRows = [];
+    this.updateColorBars = (colors) => {
+      // 必要に応じてColorBar要素の準備
+      if (colors.length != this.colorBars.length) {
+        const colorBarClick = (index) => {
+          if (this.pastedImage) {
+            this.closePastedImage();
+          }
+          this.selectedBarChanged(index);
+          this.colorInput.focus();
+          const position = TextareaHelper.getLineStartEndPosition(this.colorInput, index);
+          this.colorInput.selectionStart = position.start;
+          this.colorInput.selectionEnd = position.end;
+        }
+        this.colorBarBox.textContent = null;
+        this.colorBars = [];
         colors.forEach((color, index) => {
-          const row = document.createElement("div");
-          row.onclick = (evevt) => this.colorRowClick(evevt.target, index);
-          colorRowBox.appendChild(row);
-          this.colorRows.push(row);
+          const bar = document.createElement("div");
+          bar.onclick = (evevt) => colorBarClick(index);
+          this.colorBarBox.appendChild(bar);
+          this.colorBars.push(bar);
         });
+        this.adjustMainBoxSize();
       }
+      // class更新
       colors.forEach((color, index) => {
-        const row = this.colorRows[index];
-        row.className = "p-color-row";
+        const bar = this.colorBars[index];
+        bar.className = "p-color-bar";
         if (color) {
-          row.style.backgroundColor = color.toString();
-          if (index == this.selectedRowIndex) {
-            row.classList.add("p-color-row--selected");  
+          bar.style.backgroundColor = color.toString();
+          if (index == this.selectedBarIndex) {
+            bar.classList.add("p-color-bar--selected");
           }
         } else {
-          row.classList.add("p-color-row--hidden");
+          bar.classList.add("p-color-bar--hidden");
         }
       });
-
-      this.adjustSize();
     };
 
-    this.selectedRowChanged = (index, updateInputSelection) => {
-      let selectedRow = this.colorRows[this.selectedRowIndex];
-      if (selectedRow) {
-        selectedRow.classList.remove("p-color-row--selected");
+    this.selectedBarChanged = (index) => {
+      const previousSelectedBar = this.colorBars[this.selectedBarIndex];
+      if (previousSelectedBar) {
+        previousSelectedBar.classList.remove("p-color-bar--selected");
       }
-      this.selectedRowIndex = index;
-      selectedRow = this.colorRows[index];
-      if (selectedRow) {
-        selectedRow.classList.add("p-color-row--selected");
+      this.selectedBarIndex = index;
+      const currentSelectedBar = this.colorBars[index];
+      if (currentSelectedBar) {
+        currentSelectedBar.classList.add("p-color-bar--selected");
       }
-
       this.updateColorDescription(this.colors[index]);
-
-      if (updateInputSelection) {
-        const colorInput = document.querySelector("#colorInput");
-        colorInput.focus();
-        const text = colorInput.value;
-        let startIndex = 0;
-        for (let i = 0; i < index; i++) {
-          startIndex = text.indexOf("\n", startIndex) + 1;
-        }
-        let endIndex = text.indexOf("\n", startIndex);
-        endIndex = (endIndex < 0) ? text.length : endIndex;
-        colorInput.selectionStart = startIndex;
-        colorInput.selectionEnd = endIndex;
-      }
     }
 
     this.updateColorDescription = (color) => {
-      let t = "";
+      let t = null;
       if (color) {
         const rgb = color.toRgb();
-        t += color.toString("rgb") + "<br>";
+        t = color.toString("rgb") + "<br>";
         t += color.toString("prgb") + "<br>";
         const hex3 = tinycolor({
           r: (rgb.r & 0xF0) | ((rgb.r & 0xF0) >> 4),
@@ -126,18 +161,16 @@ class Irozo {
         t += color.toString("hsl") + "<br>";
         const name = tinycolor({ r: rgb.r, g: rgb.g, b: rgb.b }).toString("name");
         t += (/^#/.test(name) ? "-" : name) + "<br>";
+        this.descColor.style.backgroundColor = color.toString();
       }
       this.descText.innerHTML = t;
+      this.descColor.style.visibility = (t && this.pastedImage) ? "visible" : "hidden";
     };
 
     this.colorInputKeyDown = (event) => {
-      const element = event.target;
       if (event.key == "Enter") {
-        const text = element.value;
-        let m = text.match(/^random(\d+)?$/);
-        if (!m) {
-          m = text.match(/^\?(\d+)?$/)
-        }
+        const text = this.colorInput.value;
+        const m = text.match(/^\?(\d+)?$/)
         if (m) {
           const count = Math.min(m[1], 100) || 1;
           let randomText = "";
@@ -147,46 +180,122 @@ class Irozo {
             const color = tinycolor(tinycolor.names[names[index]]);
             randomText += color.toString() + "\n";
           }
-          element.value = randomText.slice(0, -1);
-          this.colorInputTextChanged(event)
+          this.colorInput.value = randomText.slice(0, -1);
+          this.colorInputTextChanged();
           event.preventDefault();
         }
       }
-      this.colorInputCaretMove(event);
+      // キャレットが移動するまでちょいお待ち
+      setTimeout(this.colorInputCaretMove, 10);
     }
 
-    this.colorInputClick = (event) => {
-      this.colorInputCaretMove(event);
-    }
-
-    this.colorInputCaretMove = (event) => {
-      const element = event.target;
-      setTimeout(() => {
-        const start = element.selectionEnd;
-        const text = element.value;
-        const index = text.slice(0, start).split("\n").length - 1;
-        this.selectedRowChanged(index, false);
-      }, 10);
+    this.colorInputCaretMove = () => {
+      if (this.pastedImage) {
+        // スポイトモードおしまい
+        this.closePastedImage();
+      }
+      const index = TextareaHelper.getLineIndex(this.colorInput, this.colorInput.selectionEnd);
+      this.selectedBarChanged(index);
     };
 
-    this.colorInputTextChanged = (event) => {
-      const element = event.target;
-      const lines = element.value.split("\n");
+    this.closePastedImage = () => {
+      this.pastedImage = null;
+      this.pastedImageCanvas.style.opacity = 0.0;
+    };
+
+    this.colorInputTextChanged = () => {
+      const lines = this.colorInput.value.split("\n");
       this.colors = lines.map(t => this.parseColor(t));
-      element.rows = this.colors.length;
-      this.updateColorRows(this.colors);
-      this.selectedRowChanged(this.selectedRowIndex, false);
+      this.colorInput.rows = this.colors.length;
+      this.updateColorBars(this.colors);
+      this.selectedBarChanged(this.selectedBarIndex);
     };
 
-    this.colorRowClick = (element, index) => {
-      this.selectedRowChanged(index, true);
+    this.onResize = () => {
+      this.pastedImageCanvas.width = this.base.clientWidth;
+      this.pastedImageCanvas.height = this.base.clientHeight;
+      if (this.pastedImage) {
+        const context = this.pastedImageContext;
+        const sw = this.pastedImage.width;
+        const sh = this.pastedImage.height;
+        const dw = this.pastedImageCanvas.width;
+        const dh = this.pastedImageCanvas.height;
+        const dr = dw / dh;
+        const sr = sw / sh;
+        let w = dw;
+        let h = dh;
+        if (sr > dr) {
+          h = w / sr;
+        } else {
+          w = h * sr;
+        }
+        // 拡大はしません
+        if (w > sw || h > sh) {
+          w = sw;
+          h = sh;
+        }
+        const x = Math.floor((dw - w) / 2);
+        const y = Math.floor((dh - h) / 2);
+        context.drawImage(this.pastedImage, 0, 0, sw, sh, x, y, w, h);
+      }
+      this.adjustMainBoxSize();
+    }
+
+    this.onKeyDown = (event) => {
+      if (event.key == "Escape") {
+        this.closePastedImage();
+      }
+    }
+
+    this.onPaste = (event) => {
+      const items = (event.clipboardData).items;
+      for (let item of items) {
+        if (/image/.test(item.type)) {
+          const imageFile = item.getAsFile();
+          this.pastedImage = new Image();
+          this.pastedImage.src = window.URL.createObjectURL(imageFile);
+          this.pastedImage.onload = () => {
+            this.onResize();
+            this.pastedImageCanvas.style.opacity = 1.0;
+          }
+          this.selectedBarIndex = -1;
+          break;
+        }
+      }
     };
 
-    const colorInput = document.querySelector("#colorInput");
-    colorInput.oninput = this.colorInputTextChanged;
-    colorInput.onkeydown = this.colorInputKeyDown;
-    colorInput.onclick = this.colorInputCaretMove;
-    window.onresize = this.adjustSize;
+    this.onMouseMove = (event) => {
+      if (!this.pastedImage) return;
+      const x = event.clientX - this.base.clientLeft;
+      const y = event.clientY - this.base.clientTop;
+      const imageData = this.pastedImageContext.getImageData(x, y, 1, 1);
+      const rgba = imageData.data;
+
+      this.hoveredColor = (rgba[3] != 0) ? tinycolor(`rgb ${rgba[0]},${rgba[1]},${rgba[2]}`) : null;
+      this.updateColorDescription(this.hoveredColor);
+    };
+
+    this.onClick = (event) => {
+      if (!this.pastedImage || !this.hoveredColor) return;
+      const rgb = this.hoveredColor.toRgb();
+      if (this.colorInput.value.length > 0 && this.colorInput.value.slice(-1) != "\n") {
+        this.colorInput.value += "\n";
+      }
+      this.colorInput.value += `${rgb.r},${rgb.g},${rgb.b}`;
+      this.colorInputTextChanged();
+    };
+
+    this.colorInput.oninput = this.colorInputTextChanged;
+    this.colorInput.onkeydown = this.colorInputKeyDown;
+    this.colorInput.onclick = this.colorInputCaretMove;
+    window.onresize = this.onResize;
+    document.onkeydown = this.onKeyDown;
+    document.onpaste = this.onPaste;
+    // 要素に隠れてるところも色取りたいのでwindowのイベントをひろう
+    window.onmousemove = this.onMouseMove;
+    window.onclick = this.onClick;
+
+    this.onResize();
   }
 }
 const irozo = new Irozo;

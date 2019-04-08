@@ -56,6 +56,14 @@ body {
   transition: font-size 0.2s;
 }
 
+.p-pasted-image {
+  position: absolute;
+  left: 0px; right: 0; top: 0; bottom: 0;
+  width: 100%; height: 100%;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
 .p-bg-icon-box {
   position: absolute;
   opacity: 0.03;
@@ -94,6 +102,7 @@ body {
     font-weight: 600;
 
     .p-title-text {
+      position: relative;
       color: $color-text;
       letter-spacing: 0.1em;
       padding-left: 0.18em;
@@ -114,7 +123,7 @@ body {
   }
   
 
-  .p-color-row-box {
+  .p-color-bar-box {
     position: absolute;
     margin: 0.1em auto;
     margin-left: 0;
@@ -124,7 +133,7 @@ body {
     flex-flow: column nowrap;
   }
 
-  .p-color-row {
+  .p-color-bar {
     // background-color: #c00;
     width: 0.4em; height: 0.8em;
     border-top-right-radius: 0.05em;
@@ -133,11 +142,11 @@ body {
     transition: width 0.2s, background-color 0.2s;
   }
 
-  .p-color-row--selected {
+  .p-color-bar--selected {
     width: 0.4em * 3;
   }
 
-  .p-color-row--hidden {
+  .p-color-bar--hidden {
     width: 0;
   }
 
@@ -158,6 +167,13 @@ body {
 
 .p-desc-box {
   z-index: 1;
+  .p-desc-color {
+    width: 5vmin; height: 5vmin;
+    margin: 0.5vmin;
+    margin-left: auto;
+    border-radius: 0.5vmin;
+    visibility: hidden;
+  }
   .p-desc-text {
     color: $color-text-off;
     font-size: 5vmin;

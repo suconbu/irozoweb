@@ -10,6 +10,8 @@
     <div class="p-icon-hair"></div>
     <div class="p-icon-face"></div>
   </div>
+  <canvas class="p-pasted-image" id="pastedImageCanvas">
+  </canvas>
   <div class="p-main-box c-container" id="mainBox">
     <div class="p-title-box c-container">
       <div class="p-title-icon-box c-container">
@@ -20,12 +22,13 @@
     </div>
     <div class="p-content-box c-container">
       <textarea class="p-color-input c-input" id="colorInput" rows="1" wrap="off" spellcheck="false"></textarea>
-      <div class="p-color-row-box c-container" id="colorRowBox">
-        <!-- ここに p-color-row の並びが作られる -->
+      <div class="p-color-bar-box c-container" id="colorBarBox">
+        <!-- ここに p-color-bar の並びが作られる -->
       </div>
     </div>
   </div>
   <div class="p-desc-box c-container">
+    <div class="p-desc-color" id="descColor"></div>
     <div class="p-desc-text c-text" id="descText"></div>
   </div>
 </div>
