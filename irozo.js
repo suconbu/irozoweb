@@ -43,6 +43,7 @@ class Irozo {
     this.mainBox = document.querySelector("#mainBox");
     this.initialBaseFontSize = Number(getComputedStyleValue(this.base, "font-size").slice(0, -2));
     this.baseFontSize = this.initialBaseFontSize;
+    this.baseFontSizeRatio = 1.0;
     this.colorInput = document.querySelector("#colorInput");
     this.descColor = document.querySelector("#descColor");
     this.descText = document.querySelector("#descText");
@@ -75,15 +76,17 @@ class Irozo {
     };
 
     this.adjustMainBoxSize = () => {
+      let mainBoxWidth = this.mainBox.clientWidth / this.baseFontSizeRatio;
+      let mainBoxHeight = this.mainBox.clientHeight / this.baseFontSizeRatio;
       if (
-        (this.mainBox.clientHeight >= (this.base.clientHeight * 0.9) ||
-         this.mainBox.clientWidth >= (this.base.clientWidth / 2)) &&
+        (mainBoxHeight >= (this.base.clientHeight * 0.9) ||
+         mainBoxWidth >= (this.base.clientWidth / 2)) &&
         this.baseFontSize > (this.initialBaseFontSize * 0.2)) {
         this.baseFontSize *= 0.8;
       }
       else if (
-        (this.mainBox.clientHeight < (this.base.clientHeight * 0.6) &&
-         this.mainBox.clientWidth < ((this.base.clientWidth / 2) * 0.6)) &&
+        (mainBoxHeight < (this.base.clientHeight * 0.6) &&
+         mainBoxWidth < ((this.base.clientWidth / 2) * 0.6)) &&
         this.baseFontSize < this.initialBaseFontSize) {
         this.baseFontSize /= 0.8;
       }
@@ -201,6 +204,8 @@ class Irozo {
     this.closePastedImage = () => {
       this.pastedImage = null;
       this.pastedImageCanvas.style.opacity = 0.0;
+      this.baseFontSizeRatio = 1.0;
+      this.adjustMainBoxSize();
     };
 
     this.colorInputTextChanged = () => {
@@ -259,6 +264,8 @@ class Irozo {
             this.pastedImageCanvas.style.opacity = 1.0;
           }
           this.selectedBarIndex = -1;
+          this.baseFontSizeRatio = 0.5;
+          this.adjustMainBoxSize();
           break;
         }
       }
