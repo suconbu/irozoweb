@@ -187,9 +187,10 @@ class Irozo {
           this.colorInputTextChanged();
           event.preventDefault();
         }
+      } else if (event.key.startsWith("Arrow")) {
+        // キャレットが移動するまでちょいお待ち
+        setTimeout(this.colorInputCaretMove, 10);
       }
-      // キャレットが移動するまでちょいお待ち
-      setTimeout(this.colorInputCaretMove, 10);
     }
 
     this.colorInputCaretMove = () => {
