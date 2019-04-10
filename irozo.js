@@ -2,19 +2,19 @@
 
 class TextareaHelper {
   // @return String
-  static getSelectedText = (element) => {
+  static getSelectedText(element) {
     const start = element.selectionStart;
     const end = element.selectionEnd;
     return element.value.slice(start, end);
   };
 
   // @return Number 0 based line index.
-  static getLineIndex = (element, position) => {
+  static getLineIndex(element, position) {
     return element.value.slice(0, position).split("\n").length - 1;
   };
 
   // @return Object { start, end }
-  static getLineStartEndPosition = (element, index) => {
+  static getLineStartEndPosition(element, index) {
     const text = element.value;
     const position = { start: 0, end: 0 };
     for (let i = 0; i < index; i++) {
@@ -26,7 +26,7 @@ class TextareaHelper {
   };
 
   // @return Object { start, end }
-  static getSelectedLineIndex = (element) => {
+  static getSelectedLineIndex(element) {
     return {
       start: this.getLineIndex(element, element.selectionStart),
       end: this.getLineIndex(element, element.selectionEnd)
@@ -209,6 +209,13 @@ class Irozo {
     };
 
     this.colorInputTextChanged = () => {
+      // クエリパラメータ更新
+      let q = "";
+      if (this.colorInput.value.length) {
+        q += `?t=${encodeURIComponent(this.colorInput.value)}`;
+      }
+      history.replaceState(null, null, q);
+
       const lines = this.colorInput.value.split("\n");
       this.colors = lines.map(t => this.parseColor(t));
       this.colorInput.rows = this.colors.length;
@@ -301,6 +308,12 @@ class Irozo {
     // 要素に隠れてるところも色取りたいのでwindowのイベントをひろう
     window.onmousemove = this.onMouseMove;
     window.onclick = this.onClick;
+
+    const q = parseQueryString();
+    if (q.t) {
+      this.colorInput.value = decodeURIComponent(q.t);
+      this.colorInputTextChanged();
+    }
 
     this.onResize();
   }

@@ -3,7 +3,7 @@
  * @return {object} パラメータのKeyValueペア
  */
 function parseQueryString() {
-  const t = location.search.substr(1);
+  const t = location.search.slice(1);
   return t.split('&').reduce((p, v) => {
     const pair = v.split('=');
     p[pair[0]] = decodeURIComponent(pair[1]);
